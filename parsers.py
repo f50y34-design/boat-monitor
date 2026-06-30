@@ -97,11 +97,13 @@ def parse_racelist_lane1(html):
     out = {"name": None, "grade": None, "motor_2rate": None,
            "avg_st": None, "local_2rate": None, "national_2rate": None}
 
-    # ★1号艇ブロックの特定★ クラス名に依存せず、選手プロフィールへのリンクを起点にする
-    # (raceindexで実証済みの堅い方式)。最初のracersearchリンク = 1号艇。
-    links = soup.select('a[href*="racersearch/profile"], a[href*="racersearch"]')
+    # ★1号艇ブロックの特定★ クラス名に依存せず、選手プロフィールへのリンクを起点にする。
+    # 注意: ヘッダーのナビにも racersearch/index リンクがあるため、必ず
+    # 「profile?toban=数字」付き(=実在の選手)に限定する。
+    links = [a for a in soup.select('a[href*="racersearch/profile"]')
+             if re.search(r"toban=\d+", a.get("href", ""))]
     if not links:
-        log.warning("racelist: 選手リンクが見つからない(構造変化)。--debugで確認")
+        log.warning("racelist: 選手リンク(profile?toban=)が見つからない。--debugで確認")
         return out
 
     first = links[0]

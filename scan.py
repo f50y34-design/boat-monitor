@@ -176,8 +176,9 @@ def debug(jcd, rno, hd):
         # 解析失敗時の手掛かり: 選手リンク数と1号艇ブロックのテキスト断片を出す
         from bs4 import BeautifulSoup
         s = BeautifulSoup(rl, "html.parser")
-        links = s.select('a[href*="racersearch"]')
-        print("  [diag] racersearchリンク数 =", len(links))
+        links = [a for a in s.select('a[href*="racersearch/profile"]')
+                 if 'toban=' in a.get("href", "")]
+        print("  [diag] 選手リンク(profile?toban)数 =", len(links), "(6が正常)")
         if links:
             blk = links[0].find_parent("tbody") or links[0].find_parent("tr") or links[0].parent
             snippet = blk.get_text(" ", strip=True)[:240]
