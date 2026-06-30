@@ -165,29 +165,22 @@ def parse_beforeinfo(html):
         w["wave_cm"] = float(mwave.group(1))
     out["weather"] = w
 
-    # スタート展示ST: 「スタート展示」セクション配下の .table1 等。
-    # 各行に コース番号 と ST(.07 / F.02 等)が並ぶ。
-    st_table = None
-    for h in soup.find_all(string=re.compile("スタート展示")):
-        cont = h.find_parent()
-        if cont:
-            st_table = cont.find_next("table")
-            if st_table:
-                break
-    if st_table:
-        rows = st_table.select("tbody tr") or st_table.select("tr")
-        course = 0
-        for tr in rows:
-            cells = [c.get_text(" ", strip=True) for c in tr.select("td")]
-            joined = " ".join(cells)
-            stm = re.search(r"(F?)\.?(\d\.\d{2}|\d{2})", joined)
-            # ST表記は ".07" や "F.02" 形式。0.07 に正規化。
-            stm2 = re.search(r"F?\s*\.?(\d{1,2})(?!\d)", joined)
-            val = _parse_st(joined)
-            if val is not None:
-                course += 1
-                if 1 <= course <= 6:
-                    out["st_by_course"][course] = val
+    # スタート展示ST: 「スタート展示 コース 並び ST 1 F.09 2 F.02 ... 5 .08」
+    # という "コース番号 → ST" の並びを直接パースする(表構造に依存しない)。
+    idx = text.find("スタート展示")
+    if idx >= 0:
+        # 次のセクション(水面気象情報など)までを対象に切り出す
+        seg = text[idx:idx + 200]
+        end = seg.find("水面気象")
+        if end > 0:
+            seg = seg[:end]
+        # "コース番号(1-6)" の直後にある "F.09 / .08 / 0.09" 形式のSTを拾う
+        for m in re.finditer(r"\b([1-6])\s+(F?\.?\d{2})\b", seg):
+            course = int(m.group(1))
+            st = _parse_st(m.group(2))
+            if st is not None and course not in out["st_by_course"]:
+                out["st_by_course"][course] = st
+
     out["ready"] = bool(out["st_by_course"]) or bool(w)
     return out
 
