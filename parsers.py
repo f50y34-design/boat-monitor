@@ -10,7 +10,14 @@ boatrace.jp の各ページHTMLをパースする。
 """
 import re
 import logging
+import warnings
 from bs4 import BeautifulSoup
+
+try:
+    from bs4 import XMLParsedAsHTMLWarning
+    warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+except Exception:
+    pass
 
 log = logging.getLogger("parsers")
 
@@ -21,7 +28,10 @@ INT_RE = re.compile(r"\d+")
 
 
 def _soup(html):
-    return BeautifulSoup(html, "lxml")
+    # ★html.parserを使う★ lxmlだとboatraceのページをXMLと誤判定し、
+    # class指定のセレクタ(table.is-w748等)が空振りしてNoneになる事故が起きる。
+    # 標準のhtml.parserはHTMLとして安定して扱える(警告も出ない)。
+    return BeautifulSoup(html, "html.parser")
 
 
 # ─────────────────────────────────────────────────────────
@@ -87,24 +97,25 @@ def parse_racelist_lane1(html):
     out = {"name": None, "grade": None, "motor_2rate": None,
            "avg_st": None, "local_2rate": None, "national_2rate": None}
 
-    table = soup.select_one("table.is-w748") or soup.select_one("div.table1 table")
-    tbodies = table.select("tbody") if table else []
-    if not tbodies:
-        log.warning("racelist: 艇テーブルが見つからない(セレクタ確認)")
+    # ★1号艇ブロックの特定★ クラス名に依存せず、選手プロフィールへのリンクを起点にする
+    # (raceindexで実証済みの堅い方式)。最初のracersearchリンク = 1号艇。
+    links = soup.select('a[href*="racersearch/profile"], a[href*="racersearch"]')
+    if not links:
+        log.warning("racelist: 選手リンクが見つからない(構造変化)。--debugで確認")
         return out
 
-    body = tbodies[0]  # 先頭tbody = 1号艇
+    first = links[0]
+    # リンクを内包する一番近いまとまり(tbody優先、無ければtr、最後はparent)を1艇分とみなす
+    body = first.find_parent("tbody") or first.find_parent("tr") or first.parent
+    block_text = body.get_text(" ", strip=True)
 
-    # 名前・級別
-    g = GRADE_RE.search(body.get_text(" ", strip=True))
+    out["name"] = first.get_text(strip=True) or None
+    g = GRADE_RE.search(block_text)
     if g:
         out["grade"] = g.group(1)
-    name_el = body.select_one("a[href*='racersearch']")
-    if name_el:
-        out["name"] = name_el.get_text(strip=True)
 
     # 1号艇ブロックの出現順で小数2桁を収集。今節成績STの混入を避けるため先頭11個に限定。
-    dec = [float(x) for x in DEC2_RE.findall(body.get_text(" ", strip=True))][:11]
+    dec = [float(x) for x in DEC2_RE.findall(block_text)][:11]
 
     def at(i):
         return dec[i] if i < len(dec) else None
@@ -184,18 +195,29 @@ def _parse_st(s):
 # oddstf(単勝・複勝): 1号艇の単勝オッズ(value判定用)
 # ─────────────────────────────────────────────────────────
 def parse_win_odds_lane1(html):
-    """return float(1号艇単勝オッズ) or None"""
+    """
+    return float(1号艇単勝オッズ) or None
+
+    ★暫定★ オッズ表の構造を実HTMLで未確認のため、確実に1号艇の単勝と
+    特定できない限り None を返す(誤った値で評価を狂わせない方が安全)。
+    value判定はオッズが取れた時だけ加味され、Noneならスキップされる。
+    実HTMLを --debug で確認後、ここを確実な抽出に差し替える。
+    """
     soup = _soup(html)
-    # 単勝テーブルの先頭行(1号艇)のオッズ。レイアウト依存のため緩めに。
-    for table in soup.select("table"):
-        head = table.get_text(" ", strip=True)
-        if "単勝" in head or "オッズ" in head:
-            tds = [td.get_text(" ", strip=True) for td in table.select("td")]
-            for t in tds:
-                f = FLOAT_RE.search(t)
-                if f:
-                    v = float(f.group())
-                    if 1.0 <= v <= 100.0:
-                        return v
-    f = FLOAT_RE.search(soup.get_text(" ", strip=True))
-    return float(f.group()) if f else None
+    # 「単勝」見出しの直近テーブルの先頭行を1号艇とみなして試行
+    for label in soup.find_all(string=re.compile("単勝")):
+        tbl = label.find_parent()
+        tbl = tbl.find_next("table") if tbl else None
+        if not tbl:
+            continue
+        row = tbl.select_one("tbody tr") or tbl.select_one("tr")
+        if not row:
+            continue
+        for td in row.select("td"):
+            m = FLOAT_RE.search(td.get_text(" ", strip=True))
+            if m:
+                v = float(m.group())
+                # 単勝の妥当域。1.0ちょうど等の不審値は採用しない。
+                if 1.05 <= v <= 100.0:
+                    return v
+    return None

@@ -171,7 +171,19 @@ def debug(jcd, rno, hd):
     idx = fetcher.get("raceindex", jcd=jcd, hd=hd)
     print("[raceindex]", parsers.parse_raceindex(idx) if idx else "取得失敗")
     rl = fetcher.get("racelist", rno=rno, jcd=jcd, hd=hd)
-    print("[racelist lane1]", parsers.parse_racelist_lane1(rl) if rl else "取得失敗")
+    if rl:
+        print("[racelist lane1]", parsers.parse_racelist_lane1(rl))
+        # 解析失敗時の手掛かり: 選手リンク数と1号艇ブロックのテキスト断片を出す
+        from bs4 import BeautifulSoup
+        s = BeautifulSoup(rl, "html.parser")
+        links = s.select('a[href*="racersearch"]')
+        print("  [diag] racersearchリンク数 =", len(links))
+        if links:
+            blk = links[0].find_parent("tbody") or links[0].find_parent("tr") or links[0].parent
+            snippet = blk.get_text(" ", strip=True)[:240]
+            print("  [diag] 1号艇ブロック先頭240字 =", snippet)
+    else:
+        print("[racelist lane1] 取得失敗")
     bi = fetcher.get("beforeinfo", rno=rno, jcd=jcd, hd=hd)
     print("[beforeinfo]", parsers.parse_beforeinfo(bi) if bi else "取得失敗")
     of = fetcher.get("oddstf", rno=rno, jcd=jcd, hd=hd)
