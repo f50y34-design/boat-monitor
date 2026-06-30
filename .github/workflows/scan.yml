@@ -35,7 +35,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           TZ: Asia/Tokyo
-        run: python scan.py
+        run: python scan.py --debug 20 9
 
       - name: Commit dedup state
         run: |
