@@ -186,7 +186,22 @@ def debug(jcd, rno, hd):
     else:
         print("[racelist lane1] 取得失敗")
     bi = fetcher.get("beforeinfo", rno=rno, jcd=jcd, hd=hd)
-    print("[beforeinfo]", parsers.parse_beforeinfo(bi) if bi else "取得失敗")
+    if bi:
+        print("[beforeinfo]", parsers.parse_beforeinfo(bi))
+        # 展示ST(st_by_course)が空の時の手掛かり: スタート展示まわりの構造を出す
+        from bs4 import BeautifulSoup
+        s = BeautifulSoup(bi, "html.parser")
+        full = s.get_text(" ", strip=True)
+        idx = full.find("スタート展示")
+        print("  [diag] 'スタート展示'の位置 =", idx)
+        if idx >= 0:
+            print("  [diag] 周辺テキスト =", full[idx:idx + 200])
+        # F付きST/小数STのトークンを拾って並びを確認
+        import re as _re
+        toks = _re.findall(r"F?\.?\d{2}(?!\d)", full)
+        print("  [diag] ST候補トークン(先頭20) =", toks[:20])
+    else:
+        print("[beforeinfo] 取得失敗")
     of = fetcher.get("oddstf", rno=rno, jcd=jcd, hd=hd)
     print("[win_odds lane1]", parsers.parse_win_odds_lane1(of) if of else "取得失敗")
 

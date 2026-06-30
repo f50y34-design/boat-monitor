@@ -116,6 +116,13 @@ def parse_racelist_lane1(html):
     if g:
         out["grade"] = g.group(1)
 
+    # 氏名: 「登録番号 / 級別 <氏名> 支部/出身地 NN歳」の並びから氏名を抜く。
+    # 例: "4236 / A1 松村　　　敏 福岡/熊本 42歳/52.3kg" → "松村 敏"
+    if not out["name"] or "検索" in out["name"]:
+        m = re.search(r"/\s*[AB][12]\s+(.+?)\s+[^\s/]+/[^\s/]+\s+\d+歳", block_text)
+        if m:
+            out["name"] = re.sub(r"\s+", " ", m.group(1)).strip()
+
     # 1号艇ブロックの出現順で小数2桁を収集。今節成績STの混入を避けるため先頭11個に限定。
     dec = [float(x) for x in DEC2_RE.findall(block_text)][:11]
 
