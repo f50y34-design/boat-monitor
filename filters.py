@@ -64,9 +64,21 @@ def evaluate(cand):
     if outer_a1:
         flags.append(f"△{outer_a1}コースにA1=まくり/差し注意(ヒモ必須)")
 
+    # 基礎点(ここから加減点)
+    score = 2
+
+    # ── ① 当地成績(この水面が得意か) ──
+    local = lane1.get("local_2rate")
+    if local is not None:
+        if local >= config.LOCAL_2RATE_GOOD:
+            flags.append(f"◎当地2連率{local:.1f}%=この水面が得意")
+            score += 1
+        elif local < config.LOCAL_2RATE_POOR:
+            flags.append(f"△当地2連率{local:.1f}%=この水面は苦手")
+            score -= 1
+
     # ── 直前情報(あれば) ──
     before = cand.get("before") or {}
-    score = 2  # 基礎点
     if before.get("ready"):
         stc = before.get("st_by_course", {})
         if stc:
@@ -89,6 +101,31 @@ def evaluate(cand):
             elif wave >= config.ROUGH_WAVE_CM or wind >= config.ROUGH_WIND_MS:
                 flags.append(f"△水面荒れ気味(波{wave:.0f}cm/風{wind:.0f}m)=イン割引")
                 score -= 1
+
+        # ── ② 展示タイム(1号艇の足が出ているか) ──
+        etl = before.get("exhibit_time_by_lane", {})
+        if etl and 1 in etl:
+            fastest = min(etl.values())
+            slowest = max(etl.values())
+            e1 = etl[1]
+            if e1 <= fastest + config.EXHIBIT_TIME_GAP_MAX:
+                flags.append(f"◎展示タイム{e1:.2f}=最速級(足あり)")
+                score += 1
+            elif e1 >= slowest:
+                flags.append(f"△展示タイム{e1:.2f}=出走中最遅(足いまひとつ)")
+                score -= 1
+
+        # ── ③ チルト(外枠のまくり気配) ──
+        til = before.get("tilt_by_lane", {})
+        if til:
+            outer_up = [ln for ln, v in til.items() if ln >= 4 and v >= config.TILT_MAKURI]
+            if outer_up:
+                flags.append(f"△{outer_up}コースがチルト上げ=まくり気配(ヒモ/一発に注意)")
+
+        # ── ④ 風向(取れれば表示。向かい/追いの解釈は場ごとに要調整のため加点は保留) ──
+        wdir = w.get("wind_dir")
+        if wdir is not None:
+            flags.append(f"ℹ風向={wdir}(向かい風=イン有利/追い風=まくり有利。判定は今後調整)")
 
     # ── value(単勝が安すぎないか) ──
     wo = cand.get("win_odds")

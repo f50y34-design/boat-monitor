@@ -146,16 +146,19 @@ def parse_racelist_lane1(html):
 def parse_beforeinfo(html):
     """
     return dict {
-        ready(bool),                # 直前情報が出ているか
-        st_by_course: {1..6: float},# スタート展示ST(コース番号→ST)
-        weather: {wind_ms, wave_cm, weather_text}
+        ready(bool),                    # 直前情報が出ているか
+        st_by_course: {1..6: float},    # スタート展示ST(コース番号→ST)
+        exhibit_time_by_lane: {1..6},   # 展示タイム(枠番→周回展示タイム) ②
+        tilt_by_lane: {1..6: float},    # チルト角度(枠番→角度) ③
+        weather: {wind_ms, wave_cm, wind_dir}  # wind_dir=風向 ④(取れれば)
     }
     """
     soup = _soup(html)
-    out = {"ready": False, "st_by_course": {}, "weather": {}}
+    out = {"ready": False, "st_by_course": {}, "exhibit_time_by_lane": {},
+           "tilt_by_lane": {}, "weather": {}}
     text = soup.get_text(" ", strip=True)
 
-    # 気象
+    # 気象(風速・波高)
     w = {}
     mwind = re.search(r"風速\s*(\d+(?:\.\d+)?)\s*m", text)
     if mwind:
@@ -163,18 +166,34 @@ def parse_beforeinfo(html):
     mwave = re.search(r"波高\s*(\d+(?:\.\d+)?)\s*cm", text)
     if mwave:
         w["wave_cm"] = float(mwave.group(1))
+
+    # 風向(④): boatraceは風向を矢印画像(class名 is-windNN 等)で持つ。
+    # テキストに出ない場合が多いので、imgのclass/altから拾えれば拾う(best-effort)。
+    wd = _extract_wind_dir(soup)
+    if wd is not None:
+        w["wind_dir"] = wd
     out["weather"] = w
 
+    # 「スタート展示」より前が各艇の 体重→展示タイム→チルト の並び
+    st_idx = text.find("スタート展示")
+    pre = text[:st_idx] if st_idx > 0 else text
+
+    # ②③ 展示タイム(6〜8秒台)の直後にチルト(-0.5〜3.0)が来る列順を利用してペアで取る
+    et, tl = [], []
+    for m in re.finditer(r"\b([6-8]\.\d{2})\s+(-?[0-3]\.\d)\b", pre):
+        et.append(float(m.group(1)))
+        tl.append(float(m.group(2)))
+    for i in range(min(6, len(et))):
+        out["exhibit_time_by_lane"][i + 1] = et[i]
+    for i in range(min(6, len(tl))):
+        out["tilt_by_lane"][i + 1] = tl[i]
+
     # スタート展示ST: 「スタート展示 コース 並び ST 1 F.09 2 F.02 ... 5 .08」
-    # という "コース番号 → ST" の並びを直接パースする(表構造に依存しない)。
-    idx = text.find("スタート展示")
-    if idx >= 0:
-        # 次のセクション(水面気象情報など)までを対象に切り出す
-        seg = text[idx:idx + 200]
+    if st_idx >= 0:
+        seg = text[st_idx:st_idx + 200]
         end = seg.find("水面気象")
         if end > 0:
             seg = seg[:end]
-        # "コース番号(1-6)" の直後にある "F.09 / .08 / 0.09" 形式のSTを拾う
         for m in re.finditer(r"\b([1-6])\s+(F?\.?\d{2})\b", seg):
             course = int(m.group(1))
             st = _parse_st(m.group(2))
@@ -183,6 +202,26 @@ def parse_beforeinfo(html):
 
     out["ready"] = bool(out["st_by_course"]) or bool(w)
     return out
+
+
+# 風向コード(1〜16 or 方位)→ そのままコードを返す。判定側で「向かい/追い」を解釈。
+def _extract_wind_dir(soup):
+    # 風向矢印のimg(class="is-wind14"等 / alt="風向")を探す
+    for img in soup.find_all("img"):
+        cls = " ".join(img.get("class", []))
+        m = re.search(r"is-wind(\d+)", cls)
+        if m:
+            return int(m.group(1))
+        alt = img.get("alt", "")
+        if "風向" in alt:
+            m2 = re.search(r"(\d+)", alt)
+            if m2:
+                return int(m2.group(1))
+    # テキストに「風向 北」等があれば方位語を返す
+    m = re.search(r"風向\s*([東西南北]{1,2})", soup.get_text(" ", strip=True))
+    if m:
+        return m.group(1)
+    return None
 
 
 def _parse_st(s):

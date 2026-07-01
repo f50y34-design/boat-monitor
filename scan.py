@@ -196,6 +196,7 @@ def debug(jcd, rno, hd):
         print("  [diag] 'スタート展示'の位置 =", idx)
         if idx >= 0:
             print("  [diag] 周辺テキスト =", full[idx:idx + 200])
+            print("  [diag] 展示タイム/チルト帯(先頭300字) =", full[max(0, idx - 320):idx])
         # F付きST/小数STのトークンを拾って並びを確認
         import re as _re
         toks = _re.findall(r"F?\.?\d{2}(?!\d)", full)
