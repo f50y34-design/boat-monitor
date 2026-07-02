@@ -109,10 +109,36 @@ def format_message(cands):
     return "\n".join(lines)
 
 
+def format_daily_report(cands, hd):
+    """朝イチで送る「本日の候補一覧」。締切時刻つきで1日の予定が分かる。"""
+    lines = [f"🚤 本日の手堅い候補一覧 ({hd[:4]}/{hd[4:6]}/{hd[6:]})"]
+    if not cands:
+        lines.append("")
+        lines.append("本日は条件(1号艇A1・2/3コースにA1なし・機力OK)を満たすレースがありません。")
+        lines.append("無理に買わないのが正解の日です。")
+    else:
+        lines.append(f"候補 {len(cands)}件。締切の前に直前情報(展示・オッズ)の確認を。")
+        for c in cands:
+            venue = config.INSIDE_STRONG_VENUES.get(c["jcd"], (str(c["jcd"]), "?"))[0]
+            l1 = c.get("lane1") or {}
+            name = l1.get("name") or "1号艇"
+            motor = l1.get("motor_2rate")
+            mtxt = f"モーター{motor:.1f}%" if motor is not None else "モーター取得不可"
+            lines.append("")
+            lines.append(f"◆ {venue} {c['rno']}R 締切{c['deadline']} ｜ 軸:{name} ({mtxt})")
+            lines.append(f"   {VERDICT_MARK.get(c['verdict'], c['verdict'])} / {c['buy_style']}")
+    lines.append("")
+    lines.append("※直前(展示ST・凪・オッズ)で最終判断。締切20分前頃に再通知します。")
+    return "\n".join(lines)
+
+
 def run(hd, dry_run):
     now = datetime.now(JST)
     notified = load_state()
-    to_notify = []
+    to_notify = []          # 直前(締切窓)の個別通知
+    report_items = []       # 本日の候補一覧(1日1回)
+    report_key = f"{hd}-dailyreport"
+    do_report = report_key not in notified
 
     for jcd in config.INSIDE_STRONG_VENUES:
         html = fetcher.get("raceindex", jcd=jcd, hd=hd)
@@ -125,32 +151,43 @@ def run(hd, dry_run):
             mins = minutes_to(race["deadline"], now)
             if mins is None or mins < config.CHOKUZEN_WINDOW_MIN[0]:
                 continue  # 締切過ぎ or 不明
-            if config.CHOKUZEN_WINDOW_MIN[0] <= mins <= config.CHOKUZEN_WINDOW_MIN[1]:
-                phase = "直前"
-            elif mins > config.PRELIM_MIN_MINUTES_TO_CLOSE:
-                phase = "事前"
-            else:
-                continue
 
-            key = f"{hd}-{jcd}-{race['rno']}-{phase}"
-            if key in notified:
-                continue
+            in_window = mins <= config.CHOKUZEN_WINDOW_MIN[1]
+            phase = "直前" if in_window else "事前"
+
+            # 直前窓の個別通知は重複防止キーで管理
+            key = f"{hd}-{jcd}-{race['rno']}-直前"
+            need_chokuzen = in_window and key not in notified
+            if not need_chokuzen and not do_report:
+                continue  # このレースについて今やることが無い
 
             cand = assess_race(jcd, hd, race, phase)
             if cand is None:
-                continue
-            # 事前は候補(CAUTION以上)を、直前はBUY/CAUTIONを通知。SKIPは出さない。
-            if cand["verdict"] in ("BUY", "CAUTION"):
-                to_notify.append(cand)
-                notified.add(key)
-            elif cand["verdict"] == "SKIP" and phase == "直前":
-                # 直前でSKIPに転んだ(例:展示で軸が甘い)場合だけ"見送り推奨"を一報
-                cand_skip = dict(cand)
-                to_notify.append(cand_skip)
-                notified.add(key)
+                continue  # 一次フィルタ落ち
+
+            # ── 本日の候補一覧(事前情報のみで判定した見込み) ──
+            if do_report and cand["verdict"] in ("BUY", "CAUTION"):
+                report_items.append(cand)
+
+            # ── 締切窓に入ったレースの個別通知(直前情報込みの最終判定) ──
+            if need_chokuzen:
+                if cand["verdict"] in ("BUY", "CAUTION", "SKIP"):
+                    # SKIPも「見送り推奨」として一報(直前で崩れた場合に分かるように)
+                    to_notify.append(cand)
+                    notified.add(key)
+
+    # ── 送信 ──
+    if do_report:
+        report_items.sort(key=lambda c: (c["deadline"] or "99:99"))
+        rep = format_daily_report(report_items, hd)
+        if dry_run:
+            print(rep)
+        else:
+            notify_email.send(rep, subject="🚤 本日の手堅い候補一覧")
+            notified.add(report_key)
+        log.info("本日の候補一覧: %d件", len(report_items))
 
     if to_notify:
-        # BUYを上に並べる
         order = {"BUY": 0, "CAUTION": 1, "SKIP": 2}
         to_notify.sort(key=lambda c: order.get(c["verdict"], 9))
         msg = format_message(to_notify)
@@ -158,9 +195,9 @@ def run(hd, dry_run):
             print(msg)
         else:
             notify_email.send(msg)
-        log.info("%d件 通知", len(to_notify))
+        log.info("%d件 直前通知", len(to_notify))
     else:
-        log.info("通知対象なし")
+        log.info("直前通知なし")
 
     if not dry_run:
         save_state(notified)
