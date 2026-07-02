@@ -104,6 +104,39 @@ def format_message(cands):
         lines.append(f"買い方: {c['buy_style']}")
         for fl in c["flags"]:
             lines.append(f"  {fl}")
+
+        # ── 直前の生データ(そのままAIに貼って買い目を詰められる形) ──
+        before = c.get("before") or {}
+        if before.get("ready"):
+            lines.append("  --- 直前データ ---")
+            lines.append(f"  級別(1-6枠): {'/'.join(c.get('grades', []))}")
+            mo = l1.get("motor_2rate"); st_avg = l1.get("avg_st"); lo = l1.get("local_2rate")
+            lines.append("  軸: モーター{} / 平均ST{} / 当地2連率{}".format(
+                f"{mo:.1f}%" if mo is not None else "?",
+                f"{st_avg:.2f}" if st_avg is not None else "?",
+                f"{lo:.1f}%" if lo is not None else "?"))
+            stc = before.get("st_by_course", {})
+            if stc:
+                lines.append("  スタ展ST(コース順): " + " ".join(
+                    f"{k}={stc[k]:.2f}" for k in sorted(stc)))
+            etl = before.get("exhibit_time_by_lane", {})
+            if etl:
+                lines.append("  展示タイム(枠順): " + " ".join(
+                    f"{k}={etl[k]:.2f}" for k in sorted(etl)))
+            til = before.get("tilt_by_lane", {})
+            if til:
+                nonzero = {k: v for k, v in til.items() if v != 0.0}
+                if nonzero:
+                    lines.append("  チルト上げ/下げ: " + " ".join(
+                        f"{k}={nonzero[k]:+.1f}" for k in sorted(nonzero)))
+            w = before.get("weather", {})
+            if w:
+                lines.append("  水面: 風{}m / 波{}cm".format(
+                    w.get("wind_ms", "?"), w.get("wave_cm", "?")))
+            wo = c.get("win_odds")
+            if wo is not None:
+                lines.append(f"  1号艇単勝オッズ: {wo:.1f}倍")
+            lines.append("  (↑この直前データを丸ごとAIに貼れば買い目を詰められます)")
     lines.append("")
     lines.append("※展示・潮・最終オッズは必ず自分の目で最終確認。余裕資金の範囲で。")
     return "\n".join(lines)
