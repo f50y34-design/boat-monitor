@@ -1,0 +1,39 @@
+name: backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "開始日 YYYYMMDD"
+        required: true
+        default: "20260401"
+      end:
+        description: "終了日 YYYYMMDD"
+        required: true
+        default: "20260630"
+      all_venues:
+        description: "全24場を対象にする(true/false)"
+        required: false
+        default: "false"
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lhasa (LZH解凍)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lhasa
+
+      - run: pip install requests
+
+      - name: Run backtest
+        run: |
+          EXTRA=""
+          if [ "${{ github.event.inputs.all_venues }}" = "true" ]; then EXTRA="--all-venues"; fi
+          python backtest.py --start ${{ github.event.inputs.start }} --end ${{ github.event.inputs.end }} $EXTRA
