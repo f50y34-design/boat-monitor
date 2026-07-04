@@ -35,21 +35,20 @@ def evaluate(cand):
     st = lane1.get("avg_st")
 
     # ── モーター(機力) ──
-    buy_style = "1着固定(2連単/3連単フォーメーション)"
+    # バックテスト(1年・4200R)の結論: 機力の高低は期待値に効かない。
+    # よって「22%未満の足切り」だけ残し、35%+の優遇はしない。
+    buy_style = "2連単1点(1着=1号艇、相手は直前気配で1艇) か 単勝1点"
     if motor is None:
         flags.append("⚠モーター2連率を取得できず(要確認)")
     elif motor < config.MOTOR_2RATE_SKIP:
         cand["verdict"] = "SKIP"
-        flags.append(f"✕モーター2連率{motor:.1f}%=軸として弱すぎ(郷原型)")
+        flags.append(f"✕モーター2連率{motor:.1f}%=軸として弱すぎ")
         cand["flags"] = flags
         cand["buy_style"] = "-"
         cand["score"] = 0
         return cand
-    elif motor < config.MOTOR_2RATE_GOOD:
-        flags.append(f"△モーター2連率{motor:.1f}%=やや弱→3連複モード推奨(原田型)")
-        buy_style = "3連複(順番を当てにいかない)"
     else:
-        flags.append(f"○モーター2連率{motor:.1f}%")
+        flags.append(f"○モーター2連率{motor:.1f}%(足切りクリア)")
 
     # ── 平均ST ──
     if st is None:

@@ -90,6 +90,29 @@ def assess_race(jcd, hd, race, phase):
 VERDICT_MARK = {"BUY": "🟢買い候補", "CAUTION": "🟡要確認", "SKIP": "⚪見送り"}
 
 
+def _suggest_partner(before):
+    """2連単1点の相手候補を直前データから機械的に1艇提案する。
+    基準: コース2〜4のうちスタ展STが最速の艇(同点なら展示タイム良い方)。
+    ※枠なり前提(コース=枠とみなす)。前づけがある場合は自分の目で要修正。
+    """
+    if not before or not before.get("ready"):
+        return None
+    stc = before.get("st_by_course", {})
+    etl = before.get("exhibit_time_by_lane", {})
+    cands = [(c, stc[c]) for c in (2, 3, 4) if c in stc]
+    if not cands:
+        return None
+    best_st = min(v for _, v in cands)
+    top = [c for c, v in cands if v <= best_st + 0.02]
+    if len(top) > 1 and etl:
+        top.sort(key=lambda c: etl.get(c, 9.9))
+    c = top[0]
+    st = stc[c]
+    et = etl.get(c)
+    ettxt = f"/展示{et:.2f}" if et else ""
+    return f"{c}号艇 (スタ展{st:.2f}{ettxt}) → 2連単 1-{c} の1点"
+
+
 def format_message(cands):
     lines = []
     head = "🚤 手堅いレース通知" 
@@ -136,6 +159,11 @@ def format_message(cands):
             wo = c.get("win_odds")
             if wo is not None:
                 lines.append(f"  1号艇単勝オッズ: {wo:.1f}倍")
+            # ── 相手候補の自動提案(2連単1点用) ──
+            partner = _suggest_partner(before)
+            if partner:
+                lines.append(f"  ▶相手候補: {partner}")
+            lines.append("  ▶購入時のオッズを必ず記録(PDCA用)")
             lines.append("  (↑この直前データを丸ごとAIに貼れば買い目を詰められます)")
     lines.append("")
     lines.append("※展示・潮・最終オッズは必ず自分の目で最終確認。余裕資金の範囲で。")
