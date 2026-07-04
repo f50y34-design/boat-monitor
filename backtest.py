@@ -63,11 +63,30 @@ def z2h(s):
 
 
 # ───────────────────────── Bファイル(番組表)パース ─────────────────────────
-RACER_RE = re.compile(
-    r"^([1-6])\s+(\d{4})(.+?)([AB][12])\s+"          # 艇番 登番 名前等 級別
-    r"([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+"  # 全国勝率 全国2率 当地勝率 当地2率
-    r"(\d{1,3})\s+([\d.]+)\s+(\d{1,3})\s+([\d.]+)"   # ﾓｰﾀｰNo ﾓｰﾀｰ2率 ﾎﾞｰﾄNo ﾎﾞｰﾄ2率
-)
+RACER_HEAD_RE = re.compile(r"^([1-6])\s+(\d{4})(.+?)([AB][12])(.*)$")
+FLOAT2_RE = re.compile(r"\d{1,3}\.\d{2}")
+
+
+def _parse_racer_line(line):
+    """→ (lane, grade, local2, motor2) or None
+    固定幅ファイルは桁が埋まるとスペースが消える(例: 50.00159100.00)ため、
+    「小数2桁の数値」だけを出現順に抽出する方式でパースする。
+    順序: [0]全国勝率 [1]全国2連率 [2]当地勝率 [3]当地2連率 [4]モーター2連率 [5]ボート2連率
+    (モーターNo/ボートNoは整数なので抽出対象外)
+    """
+    m = RACER_HEAD_RE.match(line.strip())
+    if not m:
+        return None
+    lane = int(m.group(1))
+    grade = m.group(4)
+    floats = [float(x) for x in FLOAT2_RE.findall(m.group(5))]
+    if len(floats) < 6:
+        return None
+    local2, motor2 = floats[3], floats[4]
+    # 健全性チェック(連結の誤吸収などで範囲外になったら不採用)
+    if not (0.0 <= motor2 <= 100.0 and 0.0 <= local2 <= 100.0):
+        return None
+    return lane, grade, local2, motor2
 
 
 def parse_b(text):
@@ -96,14 +115,10 @@ def parse_b(text):
             continue
         if rno is None:
             continue
-        ml = RACER_RE.match(line.strip())
-        if ml:
-            lane = int(ml.group(1))
-            buf[lane] = {
-                "grade": ml.group(4),
-                "local2": float(ml.group(8)),
-                "motor2": float(ml.group(10)),
-            }
+        parsed = _parse_racer_line(line)
+        if parsed:
+            lane, grade, local2, motor2 = parsed
+            buf[lane] = {"grade": grade, "local2": local2, "motor2": motor2}
             if len(buf) == 6:
                 out[(jcd, rno)] = {
                     "grades": [buf[i]["grade"] for i in range(1, 7)],
