@@ -1,0 +1,41 @@
+name: nightly-review
+
+on:
+  schedule:
+    # JST 23:45 (UTC 14:45) に本日の答え合わせを送信
+    - cron: "45 14 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run nightly review
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          TZ: Asia/Tokyo
+        run: python scan.py --review
+
+      - name: Commit state
+        run: |
+          if [ -n "$(git status --porcelain state.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git commit -m "nightly review state [skip ci]"
+            git push
+          fi
