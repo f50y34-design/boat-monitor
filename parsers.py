@@ -233,6 +233,33 @@ def _parse_st(s):
 
 
 # ─────────────────────────────────────────────────────────
+# raceresult(結果): 着順と払戻を取る
+#   3連単の組番(例 2-6-1)がそのまま着順なので、払戻表だけで完結する
+# ─────────────────────────────────────────────────────────
+def parse_raceresult(html):
+    """return {order:[1着,2着,3着] or None, pay:{'tan-X':int,'2t-X-Y':int,'3t-X-Y-Z':int}}"""
+    import unicodedata
+    soup = _soup(html)
+    t = unicodedata.normalize("NFKC", soup.get_text(" ", strip=True)).replace(",", "")
+    out = {"order": None, "pay": {}}
+    m = re.search(r"3連単\s*([1-6])-([1-6])-([1-6])\s*¥?\s*(\d+)", t)
+    if m:
+        a, b, c, amt = m.groups()
+        out["order"] = [int(a), int(b), int(c)]
+        out["pay"][f"3t-{a}-{b}-{c}"] = int(amt)
+    m = re.search(r"2連単\s*([1-6])-([1-6])\s*¥?\s*(\d+)", t)
+    if m:
+        a, b, amt = m.groups()
+        out["pay"][f"2t-{a}-{b}"] = int(amt)
+        if out["order"] is None:
+            out["order"] = [int(a), int(b), None]
+    m = re.search(r"単勝\s*([1-6])\s*¥?\s*(\d+)", t)
+    if m:
+        out["pay"][f"tan-{m.group(1)}"] = int(m.group(2))
+    return out
+
+
+# ─────────────────────────────────────────────────────────
 # oddstf(単勝・複勝): 1号艇の単勝オッズ(value判定用)
 # ─────────────────────────────────────────────────────────
 def parse_win_odds_lane1(html):

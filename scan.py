@@ -34,19 +34,23 @@ STATE_PATH = os.path.join(os.path.dirname(__file__), "state.json")
 
 # ── 状態(重複通知防止) ──
 def load_state():
+    """state.json → {'notified': set, 'cands': {hd: {'jcd-rno': {...}}}}"""
     try:
         with open(STATE_PATH, encoding="utf-8") as f:
-            return set(json.load(f).get("notified", []))
+            d = json.load(f)
+        return {"notified": set(d.get("notified", [])), "cands": d.get("cands", {})}
     except (FileNotFoundError, json.JSONDecodeError):
-        return set()
+        return {"notified": set(), "cands": {}}
 
 
-def save_state(notified):
+def save_state(st):
     # 当日分だけ残す(肥大化防止)
     today = datetime.now(JST).strftime("%Y%m%d")
-    kept = [k for k in notified if k.startswith(today)]
+    kept = [k for k in st["notified"] if k.startswith(today)]
+    cands = {hd: v for hd, v in st.get("cands", {}).items() if hd == today}
     with open(STATE_PATH, "w", encoding="utf-8") as f:
-        json.dump({"notified": sorted(kept)}, f, ensure_ascii=False, indent=2)
+        json.dump({"notified": sorted(kept), "cands": cands},
+                  f, ensure_ascii=False, indent=2)
 
 
 def minutes_to(deadline_hhmm, now):
@@ -91,17 +95,17 @@ VERDICT_MARK = {"BUY": "🟢買い候補", "CAUTION": "🟡要確認", "SKIP": "
 
 
 def _suggest_partner(before):
-    """2連単1点の相手候補を直前データから機械的に1艇提案する。
+    """2連単1点の相手候補。→ (相手枠 or None, 表示テキスト or None)
     基準: コース2〜4のうちスタ展STが最速の艇(同点なら展示タイム良い方)。
     ※枠なり前提(コース=枠とみなす)。前づけがある場合は自分の目で要修正。
     """
     if not before or not before.get("ready"):
-        return None
+        return None, None
     stc = before.get("st_by_course", {})
     etl = before.get("exhibit_time_by_lane", {})
     cands = [(c, stc[c]) for c in (2, 3, 4) if c in stc]
     if not cands:
-        return None
+        return None, None
     best_st = min(v for _, v in cands)
     top = [c for c, v in cands if v <= best_st + 0.02]
     if len(top) > 1 and etl:
@@ -110,7 +114,7 @@ def _suggest_partner(before):
     st = stc[c]
     et = etl.get(c)
     ettxt = f"/展示{et:.2f}" if et else ""
-    return f"{c}号艇 (スタ展{st:.2f}{ettxt}) → 2連単 1-{c} の1点"
+    return c, f"{c}号艇 (スタ展{st:.2f}{ettxt}) → 2連単 1-{c} の1点"
 
 
 def format_message(cands):
@@ -160,9 +164,10 @@ def format_message(cands):
             if wo is not None:
                 lines.append(f"  1号艇単勝オッズ: {wo:.1f}倍")
             # ── 相手候補の自動提案(2連単1点用) ──
-            partner = _suggest_partner(before)
-            if partner:
-                lines.append(f"  ▶相手候補: {partner}")
+            pl, ptxt = _suggest_partner(before)
+            c["partner"] = pl
+            if ptxt:
+                lines.append(f"  ▶相手候補: {ptxt}")
             lines.append("  ▶購入時のオッズを必ず記録(PDCA用)")
             lines.append("  (↑この直前データを丸ごとAIに貼れば買い目を詰められます)")
     lines.append("")
@@ -195,11 +200,26 @@ def format_daily_report(cands, hd):
 
 def run(hd, dry_run):
     now = datetime.now(JST)
-    notified = load_state()
+    st = load_state()
+    notified = st["notified"]
     to_notify = []          # 直前(締切窓)の個別通知
     report_items = []       # 本日の候補一覧(1日1回)
     report_key = f"{hd}-dailyreport"
     do_report = report_key not in notified
+
+    def remember(cand, partner=None):
+        """答え合わせ用に候補を記録(直前情報があれば上書き)"""
+        d = st["cands"].setdefault(hd, {})
+        k = f"{cand['jcd']}-{cand['rno']}"
+        rec = d.get(k, {})
+        rec.update({
+            "jcd": cand["jcd"], "rno": cand["rno"], "deadline": cand["deadline"],
+            "axis": (cand.get("lane1") or {}).get("name"),
+            "verdict": cand["verdict"], "phase": cand["phase"],
+        })
+        if partner is not None:
+            rec["partner"] = partner
+        d[k] = rec
 
     for jcd in config.INSIDE_STRONG_VENUES:
         html = fetcher.get("raceindex", jcd=jcd, hd=hd)
@@ -229,6 +249,7 @@ def run(hd, dry_run):
             # ── 本日の候補一覧(事前情報のみで判定した見込み) ──
             if do_report and cand["verdict"] in ("BUY", "CAUTION"):
                 report_items.append(cand)
+                remember(cand)
 
             # ── 締切窓に入ったレースの個別通知(直前情報込みの最終判定) ──
             if need_chokuzen:
@@ -251,7 +272,9 @@ def run(hd, dry_run):
     if to_notify:
         order = {"BUY": 0, "CAUTION": 1, "SKIP": 2}
         to_notify.sort(key=lambda c: order.get(c["verdict"], 9))
-        msg = format_message(to_notify)
+        msg = format_message(to_notify)  # ここでc["partner"]も確定する
+        for c in to_notify:
+            remember(c, partner=c.get("partner"))
         if dry_run:
             print(msg)
         else:
@@ -261,7 +284,64 @@ def run(hd, dry_run):
         log.info("直前通知なし")
 
     if not dry_run:
-        save_state(notified)
+        save_state(st)
+
+
+# ─────────────────────────────────────────────
+# 夜の答え合わせ(--review): 当日の候補全部の結果を照合して1通で送る
+# ─────────────────────────────────────────────
+def review(hd, dry_run):
+    st = load_state()
+    cands = st.get("cands", {}).get(hd, {})
+    review_key = f"{hd}-review"
+    if review_key in st["notified"] and not dry_run:
+        log.info("本日の答え合わせは送信済み")
+        return
+    if not cands:
+        log.info("本日の候補記録なし(答え合わせ対象なし)")
+        return
+
+    lines = [f"📒 本日の答え合わせ ({hd[:4]}/{hd[4:6]}/{hd[6:]})"]
+    n_axis = n_hit = n_partner = 0
+    v_cost = v_ret = 0
+    items = sorted(cands.values(), key=lambda r: r.get("deadline") or "99:99")
+    for r in items:
+        jcd, rno = r["jcd"], r["rno"]
+        venue = config.INSIDE_STRONG_VENUES.get(jcd, (str(jcd), "?"))[0]
+        html = fetcher.get("raceresult", rno=rno, jcd=jcd, hd=hd)
+        res = parsers.parse_raceresult(html) if html else {"order": None, "pay": {}}
+        order = res.get("order")
+        lines.append("")
+        head = f"◆ {venue} {rno}R ({r.get('verdict','?')}/軸:{r.get('axis') or '?'})"
+        if not order:
+            lines.append(head + " → 結果取得できず")
+            continue
+        otxt = "-".join(str(x) for x in order if x)
+        axis_win = order[0] == 1
+        n_axis += int(axis_win)
+        lines.append(f"{head} → 結果 {otxt} / 軸1着 {'○' if axis_win else '✕'}")
+        p = r.get("partner")
+        if p:
+            n_partner += 1
+            hit = (order[0] == 1 and order[1] == p)
+            pay = res["pay"].get(f"2t-1-{p}", 0) if hit else 0
+            v_cost += 100
+            v_ret += pay
+            n_hit += int(hit)
+            lines.append(f"   想定: 2連単 1-{p} → {'的中 ¥'+format(pay,',') if hit else '不的中'}")
+    lines.append("")
+    lines.append(f"■ 集計: 候補{len(items)}件 / 軸1着 {n_axis}件")
+    if n_partner:
+        roi = (v_ret / v_cost * 100) if v_cost else 0
+        lines.append(f"■ 想定2連単1点({n_partner}R): 的中{n_hit} / 仮想収支 {v_ret - v_cost:+,}円 (回収率{roi:.0f}%)")
+    lines.append("※仮想は1点100円換算。実購入の有無に関わらず判定精度の検証用。")
+    msg = "\n".join(lines)
+    if dry_run:
+        print(msg)
+    else:
+        notify_email.send(msg, subject="📒 本日の答え合わせ")
+        st["notified"].add(review_key)
+        save_state(st)
 
 
 def debug(jcd, rno, hd):
@@ -310,12 +390,16 @@ def main():
     ap.add_argument("--hd", default=datetime.now(JST).strftime("%Y%m%d"),
                     help="対象日 YYYYMMDD(既定: 今日JST)")
     ap.add_argument("--dry-run", action="store_true", help="メール送信せず標準出力のみ")
+    ap.add_argument("--review", action="store_true",
+                    help="本日の候補の結果を照合して答え合わせを送る(夜実行)")
     ap.add_argument("--debug", nargs=2, metavar=("JCD", "RNO"), type=int,
                     help="指定レースのパース結果を表示")
     args = ap.parse_args()
 
     if args.debug:
         debug(args.debug[0], args.debug[1], args.hd)
+    elif args.review:
+        review(args.hd, args.dry_run)
     else:
         run(args.hd, args.dry_run)
 
