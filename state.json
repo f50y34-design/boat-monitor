@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260705-16-4-直前",
+    "20260705-24-11-直前",
     "20260705-dailyreport"
   ],
   "cands": {
@@ -34,8 +35,8 @@
         "rno": 11,
         "deadline": "22:16",
         "axis": "山田 祐也",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "12-11": {
         "jcd": 12,
