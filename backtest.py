@@ -68,7 +68,7 @@ FLOAT2_RE = re.compile(r"\d{1,3}\.\d{2}")
 
 
 def _parse_racer_line(line):
-    """→ (lane, grade, local2, motor2) or None
+    """→ (lane, grade, natwin, local2, motor2) or None
     固定幅ファイルは桁が埋まるとスペースが消える(例: 50.00159100.00)ため、
     「小数2桁の数値」だけを出現順に抽出する方式でパースする。
     順序: [0]全国勝率 [1]全国2連率 [2]当地勝率 [3]当地2連率 [4]モーター2連率 [5]ボート2連率
@@ -82,11 +82,11 @@ def _parse_racer_line(line):
     floats = [float(x) for x in FLOAT2_RE.findall(m.group(5))]
     if len(floats) < 6:
         return None
-    local2, motor2 = floats[3], floats[4]
+    natwin, local2, motor2 = floats[0], floats[3], floats[4]
     # 健全性チェック(連結の誤吸収などで範囲外になったら不採用)
-    if not (0.0 <= motor2 <= 100.0 and 0.0 <= local2 <= 100.0):
+    if not (0.0 <= motor2 <= 100.0 and 0.0 <= local2 <= 100.0 and 0.0 <= natwin <= 10.0):
         return None
-    return lane, grade, local2, motor2
+    return lane, grade, natwin, local2, motor2
 
 
 def parse_b(text):
@@ -117,11 +117,13 @@ def parse_b(text):
             continue
         parsed = _parse_racer_line(line)
         if parsed:
-            lane, grade, local2, motor2 = parsed
-            buf[lane] = {"grade": grade, "local2": local2, "motor2": motor2}
+            lane, grade, natwin, local2, motor2 = parsed
+            buf[lane] = {"grade": grade, "natwin": natwin,
+                         "local2": local2, "motor2": motor2}
             if len(buf) == 6:
                 out[(jcd, rno)] = {
                     "grades": [buf[i]["grade"] for i in range(1, 7)],
+                    "natwins": [buf[i]["natwin"] for i in range(1, 7)],
                     "motor2_1": buf[1]["motor2"],
                     "local2_1": buf[1]["local2"],
                 }
@@ -219,11 +221,14 @@ def strat_results(order, pay):
 
 
 # ───────────────────────── 集計 ─────────────────────────
-def run(start, end, venues_filter):
+def run(start, end, venues_filter, value_mode=False):
     d0 = datetime.strptime(start, "%Y%m%d")
     d1 = datetime.strptime(end, "%Y%m%d")
     agg = defaultdict(lambda: [0, 0, 0, 0])  # key→[レース数,的中数,投資,払戻]
     seg_agg = defaultdict(lambda: defaultdict(lambda: [0, 0, 0, 0]))
+    # value分析: seg → {'n', 'hit', 'ret', 'pays':[]} (2連単1-2ベース) と 決着分布
+    val = defaultdict(lambda: {"n": 0, "hit": 0, "ret": 0})
+    finish2 = defaultdict(lambda: defaultdict(lambda: {"n": 0, "hit": 0, "ret": 0}))
     days = 0
     matched = 0
 
@@ -264,6 +269,35 @@ def run(start, end, venues_filter):
                 s = seg_agg[seg][name]
                 s[0] += 1; s[1] += int(hit); s[2] += cost; s[3] += ret
 
+            if value_mode:
+                order = k["order"]
+                pay = k["pay"]
+                g2 = grades[1]
+                natw = binfo.get("natwins") or []
+                # 実力差: 1号艇勝率 - 2号艇勝率
+                diff = None
+                if len(natw) >= 2:
+                    diff = natw[0] - natw[1]
+                    dseg = ("差2.0+" if diff >= 2.0 else
+                            "差1.0-2.0" if diff >= 1.0 else "差1.0未満")
+                hit12 = (order[0] == 1 and order[1] == 2)
+                ret12 = pay.get("2t-1-2", 0) if hit12 else 0
+                for tag in [f"2号艇級別={g2}",
+                            (f"実力{dseg}" if diff is not None else None),
+                            ("R帯=1-6R" if rno <= 6 else "R帯=7-12R")]:
+                    if tag is None:
+                        continue
+                    v = val[tag]
+                    v["n"] += 1; v["hit"] += int(hit12); v["ret"] += ret12
+                # 決着別: 1号艇1着時の2着艇ごとの2連単回収(1点買いとして)
+                if order[0] == 1:
+                    for lane2 in (2, 3, 4):
+                        f = finish2[f"2号艇級別={g2}"][f"1-{lane2}"]
+                        f["n"] += 1
+                        if order[1] == lane2:
+                            f["hit"] += 1
+                            f["ret"] += pay.get(f"2t-1-{lane2}", 0)
+
     # ── レポート ──
     print(f"=== バックテスト {start}〜{end} ===")
     print(f"取得できた日数: {days} / 条件合致レース: {matched}")
@@ -283,6 +317,31 @@ def run(start, end, venues_filter):
     report("全体(1号艇A1・2/3にA1なし・機力22%+)", agg)
     for seg in sorted(seg_agg):
         report(f"セグメント: {seg}", seg_agg[seg])
+
+    if value_mode:
+        print("\n===== value分析: 2連単1-2 を1点買いした場合 =====")
+        print(f"{'セグメント':<16} {'N':>5} {'的中率':>7} {'平均配当':>8} {'回収率':>7}")
+        for tag in sorted(val):
+            v = val[tag]
+            if v["n"] == 0:
+                continue
+            hitrate = v["hit"] / v["n"] * 100
+            avgpay = (v["ret"] / v["hit"]) if v["hit"] else 0
+            roi = v["ret"] / (v["n"] * 100) * 100
+            print(f"{tag:<16} {v['n']:>5} {hitrate:>6.1f}% {avgpay:>7.0f}円 {roi:>6.1f}%")
+        print("\n===== value分析: 1号艇1着時の2着別(2連単1-Xを1点買い) =====")
+        print(f"{'条件×買い目':<24} {'N':>5} {'的中率':>7} {'平均配当':>8} {'回収率':>7}")
+        for g2tag in sorted(finish2):
+            for bet in sorted(finish2[g2tag]):
+                f = finish2[g2tag][bet]
+                if f["n"] == 0:
+                    continue
+                hitrate = f["hit"] / f["n"] * 100
+                avgpay = (f["ret"] / f["hit"]) if f["hit"] else 0
+                roi = f["ret"] / (f["n"] * 100) * 100
+                print(f"{g2tag+' '+bet:<24} {f['n']:>5} {hitrate:>6.1f}% {avgpay:>7.0f}円 {roi:>6.1f}%")
+        print("\n※「1号艇1着時」ベースなので回収率は逃げレース内での比較用。")
+
     print("\n※投資は1点100円換算。回収率100%超=プラス。")
     print("※的中率が高くても回収率が低い戦略は「当たるが儲からない」。両方を見ること。")
 
@@ -293,8 +352,10 @@ def main():
     ap.add_argument("--end", required=True, help="YYYYMMDD")
     ap.add_argument("--all-venues", action="store_true",
                     help="全24場を対象(既定はイン強い場+若松のみ)")
+    ap.add_argument("--value", action="store_true",
+                    help="value分析(条件別の的中率×配当×回収率)を追加出力")
     a = ap.parse_args()
-    run(a.start, a.end, None if a.all_venues else INSIDE_STRONG)
+    run(a.start, a.end, None if a.all_venues else INSIDE_STRONG, value_mode=a.value)
 
 
 if __name__ == "__main__":
