@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260705-16-4-直前",
     "20260705-dailyreport"
   ],
   "cands": {
@@ -107,6 +108,15 @@
         "axis": "田中 信一郎",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "16-4": {
+        "jcd": 16,
+        "rno": 4,
+        "deadline": "12:17",
+        "axis": "松田 大志郎",
+        "verdict": "SKIP",
+        "phase": "直前",
+        "partner": 3
       }
     }
   }
