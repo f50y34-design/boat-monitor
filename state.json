@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260706-24-11-直前",
     "20260706-dailyreport"
   ],
   "cands": {
@@ -147,6 +148,14 @@
         "axis": "柳沢 一",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "24-11": {
+        "jcd": 24,
+        "rno": 11,
+        "deadline": "22:16",
+        "axis": "廣瀬 凜",
+        "verdict": "CAUTION",
+        "phase": "直前"
       }
     }
   }
