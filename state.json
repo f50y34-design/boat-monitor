@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260707-12-6-直前",
     "20260707-dailyreport",
     "20260707-review"
   ],
@@ -74,8 +75,8 @@
         "rno": 6,
         "deadline": "17:57",
         "axis": "前田 篤哉",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "12-7": {
         "jcd": 12,
