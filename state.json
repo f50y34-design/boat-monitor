@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260707-12-12-直前",
     "20260707-12-6-直前",
     "20260707-dailyreport",
     "20260707-review"
@@ -99,8 +100,9 @@
         "rno": 12,
         "deadline": "20:38",
         "axis": "田村 隆信",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前",
+        "partner": 2
       },
       "13-11": {
         "jcd": 13,
