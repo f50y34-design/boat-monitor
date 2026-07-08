@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260708-24-12-直前",
     "20260708-24-5-直前",
     "20260708-dailyreport",
     "20260708-review"
@@ -93,6 +94,14 @@
         "axis": "森野 正弘",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "24-12": {
+        "jcd": 24,
+        "rno": 12,
+        "deadline": "22:41",
+        "axis": "廣瀬 凜",
+        "verdict": "CAUTION",
+        "phase": "直前"
       }
     }
   }
