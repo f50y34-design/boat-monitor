@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260708-24-5-直前",
     "20260708-dailyreport",
     "20260708-review"
   ],
@@ -42,8 +43,8 @@
         "rno": 5,
         "deadline": "19:30",
         "axis": "石橋 道友",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "24-6": {
         "jcd": 24,
