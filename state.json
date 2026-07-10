@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260710-20-5-直前",
     "20260710-dailyreport",
     "20260710-review"
   ],
@@ -67,7 +68,8 @@
         "deadline": "17:36",
         "axis": "北野 輝季",
         "verdict": "CAUTION",
-        "phase": "事前"
+        "phase": "直前",
+        "partner": 2
       }
     }
   }
