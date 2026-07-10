@@ -1,16 +1,14 @@
 {
   "notified": [
-    "20260710-20-5-直前",
-    "20260710-dailyreport",
-    "20260710-review"
+    "20260711-dailyreport"
   ],
   "cands": {
-    "20260710": {
-      "19-5": {
+    "20260711": {
+      "19-2": {
         "jcd": 19,
-        "rno": 5,
-        "deadline": "19:30",
-        "axis": "河村 了",
+        "rno": 2,
+        "deadline": "18:08",
+        "axis": "篠田 優也",
         "verdict": "CAUTION",
         "phase": "事前"
       },
@@ -18,7 +16,15 @@
         "jcd": 19,
         "rno": 11,
         "deadline": "22:05",
-        "axis": "大場 恒季",
+        "axis": "高岡 竜也",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "16-7": {
+        "jcd": 16,
+        "rno": 7,
+        "deadline": "14:58",
+        "axis": "石川 真二",
         "verdict": "CAUTION",
         "phase": "事前"
       },
@@ -26,23 +32,31 @@
         "jcd": 22,
         "rno": 1,
         "deadline": "12:17",
-        "axis": "渡辺 浩司",
+        "axis": "溝口 海義也",
         "verdict": "CAUTION",
         "phase": "事前"
       },
-      "22-8": {
+      "22-10": {
         "jcd": 22,
-        "rno": 8,
-        "deadline": "15:49",
-        "axis": "松村 敏",
+        "rno": 10,
+        "deadline": "16:53",
+        "axis": "里岡 右貴",
         "verdict": "CAUTION",
         "phase": "事前"
       },
       "22-11": {
         "jcd": 22,
         "rno": 11,
-        "deadline": "17:23",
-        "axis": "稗田 聖也",
+        "deadline": "17:22",
+        "axis": "高倉 和士",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "22-12": {
+        "jcd": 22,
+        "rno": 12,
+        "deadline": "18:00",
+        "axis": "永田 啓二",
         "verdict": "CAUTION",
         "phase": "事前"
       },
@@ -50,26 +64,41 @@
         "jcd": 15,
         "rno": 8,
         "deadline": "18:44",
-        "axis": "後藤 正宗",
+        "axis": "末永 祐輝",
         "verdict": "CAUTION",
         "phase": "事前"
       },
-      "15-11": {
-        "jcd": 15,
-        "rno": 11,
-        "deadline": "20:06",
-        "axis": "砂長 知輝",
-        "verdict": "CAUTION",
-        "phase": "事前"
-      },
-      "20-5": {
+      "20-4": {
         "jcd": 20,
-        "rno": 5,
-        "deadline": "17:36",
-        "axis": "北野 輝季",
+        "rno": 4,
+        "deadline": "17:11",
+        "axis": "山口 達也",
         "verdict": "CAUTION",
-        "phase": "直前",
-        "partner": 2
+        "phase": "事前"
+      },
+      "20-7": {
+        "jcd": 20,
+        "rno": 7,
+        "deadline": "18:28",
+        "axis": "津田 陸翔",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "20-8": {
+        "jcd": 20,
+        "rno": 8,
+        "deadline": "18:54",
+        "axis": "大神 康司",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "20-12": {
+        "jcd": 20,
+        "rno": 12,
+        "deadline": "20:45",
+        "axis": "坂口 周",
+        "verdict": "CAUTION",
+        "phase": "事前"
       }
     }
   }
