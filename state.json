@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260711-20-12-直前",
     "20260711-20-7-直前",
     "20260711-dailyreport",
     "20260711-review"
@@ -99,8 +100,9 @@
         "rno": 12,
         "deadline": "20:45",
         "axis": "坂口 周",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前",
+        "partner": 3
       }
     }
   }
