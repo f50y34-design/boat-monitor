@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260714-13-12-直前",
     "20260714-dailyreport",
     "20260714-review"
   ],
@@ -42,8 +43,9 @@
         "rno": 12,
         "deadline": "16:35",
         "axis": "小野 生奈",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前",
+        "partner": 4
       },
       "22-4": {
         "jcd": 22,
