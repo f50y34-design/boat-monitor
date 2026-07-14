@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260714-13-12-直前",
+    "20260714-24-7-直前",
     "20260714-dailyreport",
     "20260714-review"
   ],
@@ -11,8 +12,8 @@
         "rno": 7,
         "deadline": "20:25",
         "axis": "山田 亮太",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "24-11": {
         "jcd": 24,
