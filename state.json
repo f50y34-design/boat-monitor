@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260715-13-12-直前",
     "20260715-dailyreport",
     "20260715-review"
   ],
@@ -92,6 +93,15 @@
         "axis": "稗田 聖也",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "13-12": {
+        "jcd": 13,
+        "rno": 12,
+        "deadline": "16:35",
+        "axis": "渡邉 優美",
+        "verdict": "CAUTION",
+        "phase": "直前",
+        "partner": 4
       }
     }
   }
