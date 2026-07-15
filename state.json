@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260715-13-12-直前",
+    "20260715-24-7-直前",
     "20260715-dailyreport",
     "20260715-review"
   ],
@@ -35,8 +36,9 @@
         "rno": 7,
         "deadline": "20:25",
         "axis": "佐藤 博亮",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前",
+        "partner": 2
       },
       "24-11": {
         "jcd": 24,
