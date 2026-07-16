@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260716-13-12-直前",
     "20260716-dailyreport"
   ],
   "cands": {
@@ -83,6 +84,15 @@
         "axis": "鎌倉 涼",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "13-12": {
+        "jcd": 13,
+        "rno": 12,
+        "deadline": "16:35",
+        "axis": "三浦 永理",
+        "verdict": "BUY",
+        "phase": "直前",
+        "partner": 2
       }
     }
   }
