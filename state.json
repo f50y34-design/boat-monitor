@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260717-16-10-直前",
     "20260717-dailyreport",
     "20260717-review"
   ],
@@ -75,7 +76,8 @@
         "deadline": "16:28",
         "axis": "河村 了",
         "verdict": "CAUTION",
-        "phase": "事前"
+        "phase": "直前",
+        "partner": 3
       }
     }
   }
