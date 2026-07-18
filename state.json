@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260718-12-8-直前",
     "20260718-dailyreport",
     "20260718-review"
   ],
@@ -43,7 +44,7 @@
         "deadline": "18:23",
         "axis": "黒野 元基",
         "verdict": "CAUTION",
-        "phase": "事前"
+        "phase": "直前"
       },
       "12-11": {
         "jcd": 12,
