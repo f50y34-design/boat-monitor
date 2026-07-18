@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260718-12-8-直前",
+    "20260718-20-10-直前",
     "20260718-dailyreport",
     "20260718-review"
   ],
@@ -123,8 +124,8 @@
         "rno": 10,
         "deadline": "19:43",
         "axis": "杉山 正樹",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       }
     }
   }
