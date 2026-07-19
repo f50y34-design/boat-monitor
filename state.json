@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260719-19-8-直前",
     "20260719-dailyreport"
   ],
   "cands": {
@@ -43,6 +44,14 @@
         "axis": "西橋 奈未",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "19-8": {
+        "jcd": 19,
+        "rno": 8,
+        "deadline": "18:58",
+        "axis": "田口 節子",
+        "verdict": "SKIP",
+        "phase": "直前"
       }
     }
   }
