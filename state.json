@@ -1,4 +1,49 @@
 {
-  "notified": [],
-  "cands": {}
+  "notified": [
+    "20260719-dailyreport"
+  ],
+  "cands": {
+    "20260719": {
+      "19-5": {
+        "jcd": 19,
+        "rno": 5,
+        "deadline": "17:43",
+        "axis": "今井 美亜",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "12-7": {
+        "jcd": 12,
+        "rno": 7,
+        "deadline": "18:21",
+        "axis": "小坂 尚哉",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "20-7": {
+        "jcd": 20,
+        "rno": 7,
+        "deadline": "18:27",
+        "axis": "磯部 誠",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "20-10": {
+        "jcd": 20,
+        "rno": 10,
+        "deadline": "19:44",
+        "axis": "大上 卓人",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      },
+      "20-12": {
+        "jcd": 20,
+        "rno": 12,
+        "deadline": "20:41",
+        "axis": "西橋 奈未",
+        "verdict": "CAUTION",
+        "phase": "事前"
+      }
+    }
+  }
 }
