@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260720-12-5-直前",
+    "20260720-19-11-直前",
     "20260720-dailyreport"
   ],
   "cands": {
@@ -34,8 +35,8 @@
         "rno": 11,
         "deadline": "20:17",
         "axis": "櫻本 あゆみ",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "16-8": {
         "jcd": 16,
