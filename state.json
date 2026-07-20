@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260720-12-5-直前",
     "20260720-dailyreport"
   ],
   "cands": {
@@ -115,6 +116,14 @@
         "axis": "新田 雄史",
         "verdict": "CAUTION",
         "phase": "事前"
+      },
+      "12-5": {
+        "jcd": 12,
+        "rno": 5,
+        "deadline": "17:24",
+        "axis": "北村 征嗣",
+        "verdict": "SKIP",
+        "phase": "直前"
       }
     }
   }
