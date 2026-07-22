@@ -1,5 +1,7 @@
 {
   "notified": [
+    "20260722-19-9-直前",
+    "20260722-24-5-直前",
     "20260722-dailyreport",
     "20260722-review"
   ],
@@ -10,8 +12,8 @@
         "rno": 5,
         "deadline": "19:30",
         "axis": "田中 和也",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "24-7": {
         "jcd": 24,
@@ -43,7 +45,8 @@
         "deadline": "19:23",
         "axis": "今井 美亜",
         "verdict": "CAUTION",
-        "phase": "事前"
+        "phase": "直前",
+        "partner": 3
       },
       "19-10": {
         "jcd": 19,
