@@ -1,5 +1,6 @@
 {
   "notified": [
+    "20260724-15-9-直前",
     "20260724-dailyreport",
     "20260724-review"
   ],
@@ -130,8 +131,8 @@
         "rno": 9,
         "deadline": "19:19",
         "axis": "渡邉 和将",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       }
     }
   }
