@@ -1,6 +1,7 @@
 {
   "notified": [
     "20260724-15-9-直前",
+    "20260724-24-12-直前",
     "20260724-dailyreport",
     "20260724-review"
   ],
@@ -27,8 +28,8 @@
         "rno": 12,
         "deadline": "22:41",
         "axis": "田中 和也",
-        "verdict": "CAUTION",
-        "phase": "事前"
+        "verdict": "BUY",
+        "phase": "直前"
       },
       "19-5": {
         "jcd": 19,
